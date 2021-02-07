@@ -48,11 +48,26 @@ class IndexHandler(BaseHandler):
         self.write(html)
 
 
+def anti_crawler(self) -> bool:
+    referer = self.request.headers.get("Referer")
+    param = self.get_query_argument("id")
+
+    if referer is None:
+        return True
+    if param not in param:
+        return True
+    print(referer, param)
+    # pass
+
+
 class ResourceHandler(BaseHandler):
     executor = ThreadPoolExecutor(50)
 
     @run_on_executor()
     def get_resource_data(self):
+        if anti_crawler(self):
+            # make you happy:-(
+            return {}
         param = self.get_query_argument("id")
         with contextlib.suppress(ValueError):
             param = int(param)
@@ -115,12 +130,12 @@ class MetricsHandler(BaseHandler):
 
     @run_on_executor()
     def set_metrics(self):
-        self.mongo.db['metrics'].update(
+        self.mongo.db['metrics'].update_one(
             {'type': "access"}, {'$inc': {'count': 1}},
             upsert=True
         )
         # today
-        self.mongo.db['metrics'].update(
+        self.mongo.db['metrics'].update_one(
             {'type': "today"}, {'$inc': {'count': 1}},
             upsert=True
         )
